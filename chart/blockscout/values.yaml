@@ -1,0 +1,93 @@
+# Default values for blockscout.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: "acmck/blockscout"
+  pullPolicy: "Always"
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+rpcHost: "https://rpc-test.eth.1e100.one"
+wsHost: "wss://ws-test.eth.1e100.one"
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: 
+    cert-manager.io/cluster-issuer: "letsencrypt"
+    external-dns.alpha.kubernetes.io/hostname: "scout.eth.1e100.one"
+  hosts:
+    - host: "scout.eth.1e100.one"
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: 
+   - secretName: "blockscout-ingress-tls"
+     hosts:
+       - "scout.eth.1e100.one"
+
+extraEnv: |
+
+  - name: DATABASE_URL
+    value: "postgresql://postgres:{{ .Values.postgresql.postgresqlPassword }}@{{ .Release.Name}}-postgresql.{{ .Release.Namespace}}:5432/{{ .Values.postgresql.postgresqlDatabase }}?ssl=false"
+  - name: ETHEREUM_JSONRPC_HTTP_URL
+    value: "{{ .Values.rpcHost }}"
+  - name: ETHEREUM_JSONRPC_TRACE_URL
+    value: "{{ .Values.rpcHost }}"
+  - name: PORT
+    value: "4000"
+  - name: ETHEREUM_JSONRPC_VARIANT
+    value: "geth"
+  - name: ETHEREUM_JSONRPC_WS_URL
+    value: "{{ .Values.wsHost }}"
+  - name: COIN
+    value: "POA"
+  - name: SUBNETWORK
+    value: "MDAX"
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+postgresql:
+  enabled: true
+  fullname: postgresql
+  postgresqlPassword: nonono
+  postgresqlDatabase: explorer
